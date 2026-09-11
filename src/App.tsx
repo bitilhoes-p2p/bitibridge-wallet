@@ -98,12 +98,12 @@ function Welcome({ onCreate, onRestore }: { onCreate: () => void; onRestore: () 
         BitiBridge
       </h1>
       <p className="muted">
-        Seu DePix, suas chaves. A BitiBridge nao guarda e nao consegue obter as
+        Seu DePix, suas chaves. A BitiBridge não guarda e não consegue obter as
         chaves desta carteira.
       </p>
       <div className="card warn">
         <p style={{ margin: 0 }}>
-          Se voce perder as 12 palavras, ninguem recupera o seu saldo. Nao existe
+          Se você perder as 12 palavras, ninguém recupera o seu saldo. Não existe
           "esqueci a senha".
         </p>
       </div>
@@ -112,7 +112,7 @@ function Welcome({ onCreate, onRestore }: { onCreate: () => void; onRestore: () 
         Criar nova carteira
       </button>
       <button className="ghost" onClick={onRestore}>
-        Ja tenho as 12 palavras
+        Já tenho as 12 palavras
       </button>
     </Shell>
   );
@@ -125,9 +125,9 @@ function ShowSeed({ mnemonic, onNext }: { mnemonic: string; onNext: () => void }
       <h2>Suas 12 palavras</h2>
       <p className="muted">
         Escreva as 12 palavras no papel, na ordem, e guarde em lugar seguro. Elas
-        sao a unica forma de recuperar a carteira.
+        são a única forma de recuperar a carteira.
       </p>
-      <p className="gold">Nao tire foto e nao salve no computador.</p>
+      <p className="gold">Não tire foto e não salve no computador.</p>
       <div className="words">
         {words.map((word, i) => (
           <div className="word" key={i}>
@@ -158,12 +158,12 @@ function ConfirmBackup({ mnemonic, onDone }: { mnemonic: string; onDone: () => v
     <Shell>
       <h2>Conferir o backup</h2>
       <p className="muted">
-        So para ter certeza de que voce anotou: digite as palavras abaixo,
+        Só para ter certeza de que você anotou: digite as palavras abaixo,
         olhando o seu papel.
       </p>
       {challenge.positions.map((position) => (
         <div key={position}>
-          <label htmlFor={"p" + position}>Palavra numero {position + 1}</label>
+          <label htmlFor={"p" + position}>Palavra número {position + 1}</label>
           <input
             id={"p" + position}
             autoComplete="off"
@@ -178,7 +178,7 @@ function ConfirmBackup({ mnemonic, onDone }: { mnemonic: string; onDone: () => v
       ))}
       {wrong && (
         <p className="danger">
-          Alguma palavra nao confere. Olhe o papel com calma, e melhor descobrir
+          Alguma palavra não confere. Olhe o papel com calma — é melhor descobrir
           agora do que depois.
         </p>
       )}
@@ -208,11 +208,11 @@ function SetPin({
 
   const save = async () => {
     if (pin.length !== 6) {
-      setError("O PIN precisa ter 6 digitos.");
+      setError("O PIN precisa ter 6 dígitos.");
       return;
     }
     if (pin !== confirm) {
-      setError("Os dois PINs nao sao iguais.");
+      setError("Os dois PINs não são iguais.");
       return;
     }
     setError(null);
@@ -225,11 +225,11 @@ function SetPin({
     <Shell>
       <h2>Criar o PIN</h2>
       <p className="muted">
-        O PIN protege a carteira neste navegador. Ele nao substitui as 12
-        palavras: se voce trocar de computador, quem traz a carteira de volta sao
+        O PIN protege a carteira neste navegador. Ele não substitui as 12
+        palavras: se você trocar de computador, quem traz a carteira de volta são
         elas.
       </p>
-      <label htmlFor="pin">PIN de 6 digitos</label>
+      <label htmlFor="pin">PIN de 6 dígitos</label>
       <input
         id="pin"
         className="pin"
@@ -262,13 +262,13 @@ function Restore({ onValid }: { onValid: (mnemonic: string) => void }) {
 
   const check = async () => {
     const phrase = text.trim();
-    // A validacao e local e inclui o checksum do BIP39: palavra trocada ou fora
-    // de ordem e recusada aqui, em vez de abrir uma carteira vazia e diferente.
+    // A validação é local e inclui o checksum do BIP39: palavra trocada ou fora
+    // de ordem é recusada aqui, em vez de abrir uma carteira vazia e diferente.
     if (await isValidMnemonic(phrase)) {
       onValid(phrase);
     } else {
       setError(
-        "Essa frase nao confere. Verifique se sao 12 palavras, na ordem certa e sem erro de digitacao.",
+        "Essa frase não confere. Verifique se são 12 palavras, na ordem certa e sem erro de digitação.",
       );
     }
   };
@@ -276,7 +276,7 @@ function Restore({ onValid }: { onValid: (mnemonic: string) => void }) {
   return (
     <Shell>
       <h2>Restaurar carteira</h2>
-      <p className="muted">Digite as 12 palavras na ordem, separadas por espaco.</p>
+      <p className="muted">Digite as 12 palavras na ordem, separadas por espaço.</p>
       <textarea
         rows={5}
         value={text}
@@ -355,14 +355,14 @@ function Home() {
           Carteira guardada neste navegador
         </p>
         <p className="muted" style={{ margin: "10px 0 0" }}>
-          Suas 12 palavras estao cifradas com o seu PIN. A BitiBridge nao tem
-          copia.
+          Suas 12 palavras estão cifradas com o seu PIN. A BitiBridge não tem
+          cópia.
         </p>
       </div>
       <h2>Saldo e recebimento</h2>
       <p className="muted">
-        Em construcao. A proxima etapa conecta a carteira a rede Liquid para
-        mostrar o seu DePix, gerar endereco de deposito e enviar.
+        Em construção. A próxima etapa conecta a carteira à rede Liquid para
+        mostrar o seu DePix, gerar endereço de depósito e enviar.
       </p>
     </Shell>
   );
