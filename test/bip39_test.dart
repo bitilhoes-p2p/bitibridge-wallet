@@ -45,9 +45,8 @@ void main() {
     test("é byte a byte a lista canônica do BIP39", () {
       // Trava anti-adulteração: uma única palavra trocada muda este hash, e uma
       // seed gerada com a lista errada não abre em nenhuma outra carteira.
-      final String joined = "${kBip39English.join("
-")}
-";
+      const String nl = '\n';
+      final String joined = kBip39English.join(nl) + nl;
       expect(
         sha256.convert(utf8.encode(joined)).toString(),
         "2f5eed53a4727b4bf8880d8f3f199efc90e58503646d9ff8eff3a2ed3b24dbda",
