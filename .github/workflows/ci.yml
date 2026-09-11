@@ -6,75 +6,62 @@ on:
   pull_request:
 
 jobs:
-  test:
-    name: Análise e testes
+  build:
+    name: Tipos, testes e build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
 
-      - uses: subosito/flutter-action@v2
+      - uses: actions/setup-node@v4
         with:
-          channel: stable
+          node-version: "22"
+          cache: npm
 
-      - run: flutter pub get
+      - run: npm ci
 
-      - name: Análise estática
-        run: flutter analyze
+      - name: Verificação de tipos
+        run: npm run typecheck
 
       - name: Testes (inclui os vetores oficiais do BIP39)
-        run: flutter test
+        run: npm test
 
       - name: A seed nunca pode aparecer em log
         run: |
-          # Trava de repositório: nenhum print/log pode receber seed, mnemônico,
-          # entropia ou chave privada. Falha o CI antes de virar vazamento.
-          if grep -rnEi "(print|debugPrint|log)\s*\(.*(mnemonic|seed|entropy|privateKey|xprv)" lib/; then
-            echo "::error::Possível vazamento de seed em log"
+          # Trava de repositório: nada no caminho da seed pode ir para console,
+          # analytics ou rede. Falha o CI antes de virar vazamento.
+          if grep -rnEi "(console\.[a-z]+|fetch|sendBeacon|XMLHttpRequest)\(.*(mnemonic|seed|entropy|privateKey|xprv)" src/; then
+            echo "::error::Possível vazamento de seed"
             exit 1
           fi
-          echo "OK — nenhum log de material secreto"
+          echo "OK — nenhum log ou envio de material secreto"
 
-  apk:
-    name: APK de teste
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-
-      - run: flutter pub get
-
-      # ATENÇÃO: build de TESTE, assinado com a chave de depuração do Flutter.
-      # A versão de distribuição vai precisar de uma chave própria, guardada em
-      # secret do repositório — nunca em arquivo versionado.
-      - name: Gerar APK
-        run: flutter build apk --release
-
-      - name: Hash do APK
+      - name: Gerador previsível é proibido no caminho da seed
         run: |
-          APK=build/app/outputs/flutter-apk/app-release.apk
-          SHA=$(sha256sum "$APK" | cut -d" " -f1)
-          echo "SHA-256: $SHA"
+          if grep -rn "Math.random" src/lib/seed/ src/lib/vault/; then
+            echo "::error::Math.random no caminho da seed"
+            exit 1
+          fi
+          echo "OK — só o gerador criptográfico do navegador"
+
+      - run: npm run build
+
+      - name: Impressão digital desta versão
+        run: |
+          # Publica o hash de cada arquivo servido. Quem quiser conferir se o que
+          # wallet.bitibridge.com entregou é o que este repositório compilou pode
+          # comparar com esta lista.
           {
-            echo "### APK de teste"
+            echo "### Impressão digital da build"
             echo ""
             echo "Commit: \`${GITHUB_SHA}\`"
             echo ""
-            echo "SHA-256: \`$SHA\`"
-            echo ""
-            echo "Confira com: \`sha256sum app-release.apk\`"
+            echo '```'
+            find dist -type f | sort | xargs sha256sum
+            echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: bitibridge-wallet-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: wallet-dist
+          path: dist
           retention-days: 30

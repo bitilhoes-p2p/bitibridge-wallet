@@ -1,0 +1,86 @@
+/* Tema da carteira — mesmas cores do painel BitiBridge (dark fintech). */
+:root {
+  --bg: #0a0e1a;
+  --surface: #121829;
+  --cyan: #00e0ff;
+  --gold: #f5b301;
+  --danger: #ff5a5a;
+  --muted: #8a93a8;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: #fff;
+  font-family: Inter, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.shell {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 24px 20px 40px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1 { font-size: 34px; line-height: 1.1; margin: 0 0 14px; }
+h2 { font-size: 22px; margin: 0 0 14px; }
+p { line-height: 1.55; margin: 0 0 14px; }
+.muted { color: var(--muted); }
+.gold { color: var(--gold); font-weight: 600; }
+.danger { color: var(--danger); }
+.grow { flex: 1; }
+
+.card {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 18px;
+}
+.card.warn { border: 1px solid rgba(245, 179, 1, 0.35); }
+
+button {
+  width: 100%;
+  padding: 15px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  margin-top: 10px;
+  font-family: inherit;
+}
+button.primary { background: var(--cyan); color: var(--bg); }
+button.ghost { background: transparent; color: var(--cyan); border: 1px solid var(--cyan); }
+button:disabled { opacity: 0.5; cursor: default; }
+
+input, textarea {
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  border-radius: 12px;
+  border: none;
+  background: var(--surface);
+  color: #fff;
+  font-family: inherit;
+  margin-bottom: 14px;
+}
+input.pin { letter-spacing: 8px; font-size: 20px; }
+label { display: block; font-weight: 600; margin-bottom: 8px; }
+
+.words { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 18px 0; }
+.word {
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+.word .n { color: var(--muted); font-size: 13px; min-width: 20px; }
+.word .w { font-weight: 600; font-size: 16px; }
