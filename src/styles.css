@@ -84,3 +84,11 @@ label { display: block; font-weight: 600; margin-bottom: 8px; }
 }
 .word .n { color: var(--muted); font-size: 13px; min-width: 20px; }
 .word .w { font-weight: 600; font-size: 16px; }
+
+/* Classes que substituem estilo embutido no JSX.
+   Motivo: sem `style=` no HTML, a política de segurança do site pode proibir
+   TODO estilo e script em linha, sem exceção. Num app de carteira essa trava
+   vale o incômodo — ela é o que impede um script injetado de rodar. */
+.tight { margin: 0; }
+.tight-top { margin: 10px 0 0; }
+.strong { font-weight: 600; }

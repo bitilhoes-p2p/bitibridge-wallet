@@ -102,7 +102,7 @@ function Welcome({ onCreate, onRestore }: { onCreate: () => void; onRestore: () 
         chaves desta carteira.
       </p>
       <div className="card warn">
-        <p style={{ margin: 0 }}>
+        <p className="tight">
           Se você perder as 12 palavras, ninguém recupera o seu saldo. Não existe
           "esqueci a senha".
         </p>
@@ -351,10 +351,10 @@ function Home() {
     <Shell>
       <h2>Carteira BitiBridge</h2>
       <div className="card">
-        <p style={{ margin: 0, fontWeight: 600 }}>
+        <p className="tight strong">
           Carteira guardada neste navegador
         </p>
-        <p className="muted" style={{ margin: "10px 0 0" }}>
+        <p className="muted tight-top">
           Suas 12 palavras estão cifradas com o seu PIN. A BitiBridge não tem
           cópia.
         </p>
