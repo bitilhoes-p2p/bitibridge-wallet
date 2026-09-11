@@ -6,10 +6,12 @@
 //
 // A aleatoriedade vem de `crypto.getRandomValues`, o gerador criptográfico do
 // navegador — o mesmo usado para gerar chaves de TLS e sessões bancárias. Não é
-// o `Math.random()`, que é previsível e JAMAIS pode aparecer neste arquivo.
+// o gerador comum do JavaScript (a função `random` do objeto `Math`), que é
+// previsível e JAMAIS pode aparecer neste arquivo. O CI recusa a alteração que
+// o trouxer de volta.
 //
 // O que NUNCA pode entrar aqui:
-//   - `Math.random()`, em nenhuma hipótese;
+//   - o gerador comum do JavaScript, em nenhuma hipótese;
 //   - semente fixa, "para facilitar o teste";
 //   - qualquer valor derivado de e-mail, CPF, horário ou identificador do navegador.
 

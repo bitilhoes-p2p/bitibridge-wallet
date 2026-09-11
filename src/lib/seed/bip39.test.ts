@@ -124,7 +124,8 @@ describe("geração de seed nova", () => {
     expect(seen.size).toBe(50);
   });
 
-  it("nunca usa Math.random", async () => {
+  it("nunca usa o gerador previsivel do JavaScript", async () => {
+    const proibido = "Math" + ".random";
     // Trava de código: o gerador previsível do JavaScript não pode existir no
     // caminho da seed, nem por descuido numa refatoração futura.
     const fonte = entropySource;
@@ -134,6 +135,6 @@ describe("geração de seed nova", () => {
       .split("\n")
       .filter((linha: string) => !linha.trim().startsWith("//"))
       .join("\n");
-    expect(codigo.includes("Math.random")).toBe(false);
+    expect(codigo.includes(proibido)).toBe(false);
   });
 });

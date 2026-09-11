@@ -37,7 +37,7 @@ jobs:
 
       - name: Gerador previsível é proibido no caminho da seed
         run: |
-          if grep -rn "Math.random" src/lib/seed/ src/lib/vault/; then
+          if grep -rn "Math.random" src/; then
             echo "::error::Math.random no caminho da seed"
             exit 1
           fi
