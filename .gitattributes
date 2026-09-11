@@ -1,0 +1,7 @@
+# Quebra de linha normalizada em todo o repositório.
+* text=auto eol=lf
+
+# A lista oficial do BIP39 NUNCA pode ser convertida: o SHA-256 documentado no
+# README (2f5eed53...3b24dbda) precisa bater byte a byte em qualquer sistema
+# operacional, senão a conferência que prometemos ao usuário não fecha no Windows.
+assets/bip39_english.txt -text
