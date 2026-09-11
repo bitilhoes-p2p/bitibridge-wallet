@@ -14,6 +14,7 @@ import { isValidMnemonic } from "./lib/seed/bip39";
 import { generateMnemonic } from "./lib/seed/entropy";
 import { WrongPinError } from "./lib/vault/pinCrypto";
 import type { SeedVault } from "./lib/vault/seedVault";
+import { Home } from "./screens/Home";
 
 type Step =
   | { name: "loading" }
@@ -23,7 +24,7 @@ type Step =
   | { name: "setPin"; mnemonic: string }
   | { name: "restore" }
   | { name: "unlock" }
-  | { name: "home" };
+  | { name: "home"; mnemonic: string };
 
 export function App({ vault }: { vault: SeedVault }) {
   const [step, setStep] = useState<Step>({ name: "loading" });
@@ -72,15 +73,20 @@ export function App({ vault }: { vault: SeedVault }) {
         <SetPin
           vault={vault}
           mnemonic={step.mnemonic}
-          onSaved={() => setStep({ name: "home" })}
+          onSaved={() => setStep({ name: "home", mnemonic: step.mnemonic })}
         />
       );
     case "restore":
       return <Restore onValid={(m) => setStep({ name: "setPin", mnemonic: m })} />;
     case "unlock":
-      return <Unlock vault={vault} onOpen={() => setStep({ name: "home" })} />;
+      return (
+        <Unlock
+          vault={vault}
+          onOpen={(mnemonic) => setStep({ name: "home", mnemonic })}
+        />
+      );
     case "home":
-      return <Home />;
+      return <Home mnemonic={step.mnemonic} />;
   }
 }
 
@@ -298,7 +304,13 @@ function Restore({ onValid }: { onValid: (mnemonic: string) => void }) {
   );
 }
 
-function Unlock({ vault, onOpen }: { vault: SeedVault; onOpen: () => void }) {
+function Unlock({
+  vault,
+  onOpen,
+}: {
+  vault: SeedVault;
+  onOpen: (mnemonic: string) => void;
+}) {
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -307,8 +319,7 @@ function Unlock({ vault, onOpen }: { vault: SeedVault; onOpen: () => void }) {
     setBusy(true);
     setError(null);
     try {
-      await vault.unlock(pin);
-      onOpen();
+      onOpen(await vault.unlock(pin));
     } catch (e) {
       if (!(e instanceof WrongPinError)) throw e;
       const left = await vault.remainingAttempts();
@@ -342,28 +353,6 @@ function Unlock({ vault, onOpen }: { vault: SeedVault; onOpen: () => void }) {
         {busy ? "Abrindo..." : "Entrar"}
       </button>
       <div className="grow" />
-    </Shell>
-  );
-}
-
-function Home() {
-  return (
-    <Shell>
-      <h2>Carteira BitiBridge</h2>
-      <div className="card">
-        <p className="tight strong">
-          Carteira guardada neste navegador
-        </p>
-        <p className="muted tight-top">
-          Suas 12 palavras estão cifradas com o seu PIN. A BitiBridge não tem
-          cópia.
-        </p>
-      </div>
-      <h2>Saldo e recebimento</h2>
-      <p className="muted">
-        Em construção. A próxima etapa conecta a carteira à rede Liquid para
-        mostrar o seu DePix, gerar endereço de depósito e enviar.
-      </p>
     </Shell>
   );
 }

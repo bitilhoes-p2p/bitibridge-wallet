@@ -92,3 +92,6 @@ label { display: block; font-weight: 600; margin-bottom: 8px; }
 .tight { margin: 0; }
 .tight-top { margin: 10px 0 0; }
 .strong { font-weight: 600; }
+
+.saldo { font-size: 34px; font-weight: 700; margin: 6px 0 10px; }
+.endereco { margin: 0; font-family: ui-monospace, "JetBrains Mono", monospace; font-size: 13px; word-break: break-all; line-height: 1.5; }

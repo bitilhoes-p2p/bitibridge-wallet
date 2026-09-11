@@ -29,8 +29,26 @@ describe("política de segurança do site", () => {
   it("não permite script nem estilo em linha", () => {
     // 'unsafe-inline' derruba a proteção inteira: com ele, um script injetado em
     // qualquer ponto da página executa normalmente.
-    expect(CSP).not.toContain("unsafe-inline");
-    expect(CSP).not.toContain("unsafe-eval");
+    expect(CSP).not.toContain("'unsafe-inline'");
+  });
+
+  it("libera WebAssembly, mas não o eval comum", () => {
+    // A Liquid Wallet Kit é WebAssembly e precisa de 'wasm-unsafe-eval'. Essa
+    // permissão é estreita: deixa compilar módulo WebAssembly e NÃO deixa
+    // executar texto como código, que é o que o 'unsafe-eval' comum permitiria.
+    expect(CSP).toContain("'wasm-unsafe-eval'");
+    expect(CSP).not.toContain("'unsafe-eval'");
+  });
+
+  it("o indexador é liberado nominalmente, e só ele", () => {
+    // A carteira só pode falar com o servidor que consulta a blockchain. Qualquer
+    // outro destino — inclusive um servidor nosso — está barrado pelo navegador.
+    const connect = CSP.split("connect-src ")[1]?.split(";")[0] ?? "";
+    expect(connect).toContain("'self'");
+    expect(connect).toContain("https://blockstream.info");
+    // Nenhum curinga: 'https:' ou '*' liberaria a internet inteira.
+    expect(connect).not.toContain("*");
+    expect(connect.includes("https: ")).toBe(false);
   });
 
   it("proíbe a carteira de ser embutida em iframe", () => {
