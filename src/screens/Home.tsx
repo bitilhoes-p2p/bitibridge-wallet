@@ -7,6 +7,7 @@
 import { useEffect, useState } from "react";
 
 import {
+  isRateLimited,
   openLiquidWallet,
   type LiquidWallet,
   type WalletBalance,
@@ -113,12 +114,24 @@ export function Home({ mnemonic }: { mnemonic: string }) {
   }
 
   if (state.name === "error") {
+    // O serviço público de consulta limita requisições. Quem tem histórico
+    // dispara centenas de consultas numa varredura e esbarra nesse limite —
+    // dizer isso é melhor do que um erro técnico que ninguém entende.
+    const limitado = isRateLimited(state.message);
     return (
       <div className="shell">
         <h2>Carteira BitiBridge</h2>
         <div className="card">
-          <p className="tight strong">Não consegui consultar a rede</p>
-          <p className="muted tight-top">{state.message}</p>
+          <p className="tight strong">
+            {limitado
+              ? "O serviço de consulta está sobrecarregado"
+              : "Não consegui consultar a rede"}
+          </p>
+          <p className="muted tight-top">
+            {limitado
+              ? "O serviço público que lê a blockchain limitou as consultas vindas da sua conexão. Tente de novo em alguns minutos."
+              : state.message}
+          </p>
         </div>
         <p className="muted">
           Seu dinheiro não corre risco por causa disto: ele está na rede Liquid, e
