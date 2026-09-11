@@ -10,7 +10,7 @@ jobs:
     name: Análise e testes
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: subosito/flutter-action@v2
         with:
@@ -33,3 +33,48 @@ jobs:
             exit 1
           fi
           echo "OK — nenhum log de material secreto"
+
+  apk:
+    name: APK de teste
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - run: flutter pub get
+
+      # ATENÇÃO: build de TESTE, assinado com a chave de depuração do Flutter.
+      # A versão de distribuição vai precisar de uma chave própria, guardada em
+      # secret do repositório — nunca em arquivo versionado.
+      - name: Gerar APK
+        run: flutter build apk --release
+
+      - name: Hash do APK
+        run: |
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          SHA=$(sha256sum "$APK" | cut -d" " -f1)
+          echo "SHA-256: $SHA"
+          {
+            echo "### APK de teste"
+            echo ""
+            echo "Commit: \`${GITHUB_SHA}\`"
+            echo ""
+            echo "SHA-256: \`$SHA\`"
+            echo ""
+            echo "Confira com: \`sha256sum app-release.apk\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bitibridge-wallet-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
