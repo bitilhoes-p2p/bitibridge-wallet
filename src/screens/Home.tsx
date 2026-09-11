@@ -11,6 +11,8 @@ import {
   type LiquidWallet,
   type WalletBalance,
 } from "../lib/liquid/wallet";
+import { DepixIcon, LbtcIcon } from "../components/AssetIcon";
+import { Send } from "./Send";
 
 type State =
   | { name: "loading" }
@@ -30,6 +32,7 @@ export function Home({ mnemonic }: { mnemonic: string }) {
   const [state, setState] = useState<State>({ name: "loading" });
   const [wallet, setWallet] = useState<LiquidWallet | null>(null);
   const [copied, setCopied] = useState(false);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -81,6 +84,21 @@ export function Home({ mnemonic }: { mnemonic: string }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  if (sending && wallet && state.name === "ready") {
+    return (
+      <Send
+        wallet={wallet}
+        balance={state.balance}
+        onBack={() => setSending(false)}
+        onDone={() => {
+          // Depois de enviar, volta e reconsulta: o saldo mudou.
+          setSending(false);
+          void refresh();
+        }}
+      />
+    );
+  }
+
   if (state.name === "loading") {
     return (
       <div className="shell">
@@ -112,14 +130,31 @@ export function Home({ mnemonic }: { mnemonic: string }) {
 
   return (
     <div className="shell">
-      <h2>Carteira BitiBridge</h2>
+      <header className="marca">
+        <span className="marca-nome">BitiBridge</span>
+        <span className="marca-sub">carteira</span>
+      </header>
 
-      <div className="card">
-        <p className="tight muted">Saldo em DePix</p>
+      <div className="card saldo-card">
+        <div className="ativo">
+          <DepixIcon size={44} />
+          <div className="ativo-nome">
+            <span className="ativo-titulo">DePix</span>
+            <span className="ativo-sub">Reais na rede Liquid</span>
+          </div>
+        </div>
         <p className="saldo">{brl(state.balance.depixCents)}</p>
-        <p className="tight muted">
-          L-BTC para taxas de rede: {lbtc(state.balance.lbtcSats)}
-        </p>
+      </div>
+
+      <div className="card ativo-linha">
+        <div className="ativo">
+          <LbtcIcon size={32} />
+          <div className="ativo-nome">
+            <span className="ativo-titulo pequeno">L-BTC</span>
+            <span className="ativo-sub">Combustível das transações</span>
+          </div>
+        </div>
+        <span className="ativo-valor">{lbtc(state.balance.lbtcSats)}</span>
       </div>
 
       {state.balance.lbtcSats === 0 && (
@@ -131,6 +166,10 @@ export function Home({ mnemonic }: { mnemonic: string }) {
           </p>
         </div>
       )}
+
+      <button className="primary" onClick={() => setSending(true)}>
+        Enviar DePix
+      </button>
 
       <h2>Receber</h2>
       <p className="muted">

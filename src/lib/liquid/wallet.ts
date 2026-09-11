@@ -9,6 +9,7 @@
 // quando o usuário de fato abre a carteira. Quem está na tela de criação não
 // paga esse download.
 
+import { depixCentsToUnits } from "./amounts";
 import { DEPIX_ASSET_ID } from "./assets";
 
 /**
@@ -33,6 +34,49 @@ export function loadLwk(): Promise<Lwk> {
   return lwkModule;
 }
 
+
+/** Endereço de destino inválido, de outra rede, ou ilegível. */
+export class InvalidAddressError extends Error {
+  constructor() {
+    super("Endereço de destino inválido");
+    this.name = "InvalidAddressError";
+  }
+}
+
+/** Não há DePix suficiente para o valor pedido. */
+export class InsufficientDepixError extends Error {
+  constructor() {
+    super("Saldo de DePix insuficiente");
+    this.name = "InsufficientDepixError";
+  }
+}
+
+/**
+ * Não há L-BTC para pagar a taxa da rede.
+ *
+ * É o caso mais comum e o mais confuso para quem não conhece a Liquid: a pessoa
+ * tem DePix, vê o saldo na tela, e mesmo assim não consegue enviar. A tela
+ * precisa explicar isso, não mostrar "fundos insuficientes".
+ */
+export class NoLbtcError extends Error {
+  constructor() {
+    super("Sem L-BTC para a taxa de rede");
+    this.name = "NoLbtcError";
+  }
+}
+
+/** Envio montado e conferido, esperando a confirmação do usuário. */
+export interface PreparedSend {
+  /** Destino, como o usuário digitou. */
+  toAddress: string;
+  /** Valor em centavos de DePix. */
+  cents: number;
+  /** Taxa da rede, em satoshis de L-BTC. */
+  feeSats: number;
+  /** A transação montada, ainda NÃO assinada. */
+  pset: unknown;
+}
+
 export interface WalletBalance {
   /** Saldo de DePix, em centavos (1 DePix = 1 real = 100 centavos). */
   depixCents: number;
@@ -49,6 +93,10 @@ export interface LiquidWallet {
   sync(): Promise<WalletBalance>;
   /** O descritor da carteira. NUNCA enviar isto a servidor nosso. */
   descriptor(): string;
+  /** Monta o envio e devolve o que será assinado, para o usuário conferir. */
+  prepareSend(toAddress: string, cents: number): Promise<PreparedSend>;
+  /** Assina, finaliza e transmite. Devolve o identificador da transação. */
+  confirmSend(prepared: PreparedSend): Promise<string>;
 }
 
 /**
@@ -85,6 +133,49 @@ export async function openLiquidWallet(mnemonic: string): Promise<LiquidWallet> 
       if (update !== undefined) wollet.applyUpdate(update);
       return readBalance(wollet.balance(), network.policyAsset().toString());
     },
+
+    async prepareSend(toAddress: string, cents: number): Promise<PreparedSend> {
+      // As três conferências abaixo existem para o usuário receber um motivo em
+      // vez de "fundos insuficientes", que é o que a biblioteca diria.
+      let address: InstanceType<Lwk["Address"]>;
+      try {
+        address = lwk.Address.parse(toAddress.trim(), network);
+      } catch {
+        throw new InvalidAddressError();
+      }
+      if (!address.isMainnet()) throw new InvalidAddressError();
+
+      const balance = readBalance(
+        wollet.balance(),
+        network.policyAsset().toString(),
+      );
+      if (balance.depixCents < cents) throw new InsufficientDepixError();
+      // A taxa da rede Liquid é paga SEMPRE em L-BTC, mesmo enviando DePix.
+      if (balance.lbtcSats <= 0) throw new NoLbtcError();
+
+      const pset = network
+        .txBuilder()
+        .addRecipient(
+          address,
+          depixCentsToUnits(cents),
+          new lwk.AssetId(DEPIX_ASSET_ID),
+        )
+        .finish(wollet);
+
+      // Lê da transação MONTADA quanto ela realmente cobra — não de estimativa.
+      const feeSats = Number(wollet.psetDetails(pset).balance().fee());
+
+      return { toAddress: toAddress.trim(), cents, feeSats, pset };
+    },
+
+    async confirmSend(prepared: PreparedSend): Promise<string> {
+      const signed = signer.sign(prepared.pset as InstanceType<Lwk["Pset"]>);
+      const finalized = wollet.finalize(signed);
+      // SEM retentativa aqui, ao contrário da varredura: repetir uma transmissão
+      // pode fazer o cliente pagar duas vezes. Falhou, o usuário decide.
+      const txid = await client.broadcast(finalized);
+      return txid.toString();
+    },
   };
 }
 
@@ -92,17 +183,38 @@ export async function openLiquidWallet(mnemonic: string): Promise<LiquidWallet> 
 /** Quantas vezes insistir na varredura antes de desistir. */
 export const SCAN_ATTEMPTS = 4;
 
-/** Espera entre as tentativas, em milissegundos. */
-export const SCAN_RETRY_DELAY_MS = 1500;
+/** Espera base entre tentativas. Dobra a cada falha. */
+export const SCAN_RETRY_BASE_MS = 1500;
+
+/** Espera quando o servidor responde "requisições demais". */
+export const SCAN_RATE_LIMIT_MS = 8000;
+
+/** `true` quando o erro indica bloqueio por excesso de requisições. */
+export function isRateLimited(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes("429") || /too many requests/i.test(message);
+}
 
 /**
- * Varre a rede, insistindo quando o servidor se contradiz.
+ * Quanto esperar antes da próxima tentativa.
  *
- * Motivo (verificado em 2026-09-11): o Esplora publico da Blockstream e servido
- * por varios nos que nao estao no mesmo bloco. Um deles anuncia "a rede esta no
- * bloco N" e o seguinte responde 404 para esse mesmo bloco N. Como a Liquid gera
- * um bloco por minuto, isso derruba a consulta com frequencia — e o usuario via
- * "nao consegui consultar a rede" num saldo que estava perfeitamente acessivel.
+ * Dois motivos de falha, dois comportamentos:
+ *
+ *   - servidor se contradizendo (anuncia um bloco e devolve 404 para ele):
+ *     resolve em segundos, então espera curta, dobrando a cada vez;
+ *   - bloqueio por excesso de requisições (429): insistir rápido PIORA, porque
+ *     cada tentativa conta contra o limite. Espera bem mais longa.
+ *
+ * Verificado em 2026-09-11: o Esplora público faz as duas coisas. Uma carteira
+ * com histórico dispara centenas de consultas numa varredura e é bloqueada.
+ */
+export function retryDelayMs(attempt: number, error: unknown): number {
+  if (isRateLimited(error)) return SCAN_RATE_LIMIT_MS * attempt;
+  return SCAN_RETRY_BASE_MS * 2 ** (attempt - 1);
+}
+
+/**
+ * Varre a rede, insistindo quando o servidor falha de forma passageira.
  *
  * Repetir e SEGURO aqui porque a varredura so LE. Transmitir transacao NUNCA
  * entra nesta funcao: repetir um envio pagaria duas vezes.
@@ -118,7 +230,8 @@ async function scanWithRetry(
     } catch (error) {
       lastError = error;
       if (attempt < SCAN_ATTEMPTS) {
-        await new Promise((resolve) => setTimeout(resolve, SCAN_RETRY_DELAY_MS));
+        const delay = retryDelayMs(attempt, error);
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
   }

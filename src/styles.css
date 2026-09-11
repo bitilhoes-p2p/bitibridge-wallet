@@ -95,3 +95,19 @@ label { display: block; font-weight: 600; margin-bottom: 8px; }
 
 .saldo { font-size: 34px; font-weight: 700; margin: 6px 0 10px; }
 .endereco { margin: 0; font-family: ui-monospace, "JetBrains Mono", monospace; font-size: 13px; word-break: break-all; line-height: 1.5; }
+
+/* ── Cabeçalho da marca ─────────────────────────────────────────────────── */
+.marca { display: flex; align-items: baseline; gap: 8px; margin-bottom: 20px; }
+.marca-nome { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+.marca-sub { font-size: 13px; color: var(--muted); text-transform: lowercase; }
+
+/* ── Cartões de ativo ───────────────────────────────────────────────────── */
+.saldo-card { padding: 20px; }
+.ativo { display: flex; align-items: center; gap: 12px; }
+.ativo-nome { display: flex; flex-direction: column; line-height: 1.25; }
+.ativo-titulo { font-weight: 600; font-size: 16px; }
+.ativo-titulo.pequeno { font-size: 14px; }
+.ativo-sub { font-size: 12px; color: var(--muted); }
+.ativo-linha { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; }
+.ativo-valor { font-family: ui-monospace, "JetBrains Mono", monospace; font-size: 13px; color: var(--muted); }
+.saldo { font-size: 36px; font-weight: 700; margin: 16px 0 0; letter-spacing: -1px; }
